@@ -13,18 +13,47 @@
 #include<stdbool.h>
 
 char dirpath[50] = "/home/solxius/Downloads";
-
 char ext[100000] = "\0";
 int id = 0;
 
-void substr(char *s, char *sub, int p, int l) {
-   int c = 0;
-   while (c < l) 
-   {
-      sub[c] = s[p + c];
-      c++;
+void substr(char *s, char *sub, int y, int z);
+char *encrypt(char* str, bool cek);
+char *bagianAkhir(char *str);
+char *jalanCek(char *str);
+char *campurPath(char *fin, char *str1, const char *str2);
+int cekAtoz(char *str);
+void loopEncry(char *str, int flag);
+void fullencr(char *str, int flag);
+static int xmp_getattr(const char *path, struct stat *stbuf);
+static int xmp_access(const char *path, int mask);
+static int xmp_readlink(const char *path, char *buf, size_t size);
+static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+		       off_t offset, struct fuse_file_info *fi);
+static int xmp_mknod(const char *path, mode_t mode, dev_t rdev);
+static int xmp_mkdir(const char *path, mode_t mode);
+static int xmp_unlink(const char *path);
+static int xmp_rmdir(const char *path);
+static int xmp_symlink(const char *from, const char *to);
+static int xmp_rename(const char *from, const char *to);
+static int xmp_link(const char *from, const char *to);
+static int xmp_chmod(const char *path, mode_t mode);
+static int xmp_chown(const char *path, uid_t uid, gid_t gid);
+static int xmp_truncate(const char *path, off_t size);
+static int xmp_open(const char *path, struct fuse_file_info *fi);
+static int xmp_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+static int xmp_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
+static int xmp_statfs(const char *path, struct statvfs *stbuf);		     
+static int xmp_create(const char* path, mode_t mode, struct fuse_file_info* fi);
+static int xmp_release(const char *path, struct fuse_file_info *fi);
+static int xmp_fsync(const char *path, int isdatasync, struct fuse_file_info *fi);
+
+void substr(char *s, char *sub, int y, int z) {
+   int aa = 0;
+   while (aa < z) {
+      sub[aa] = s[y + aa];
+      aa++;
    }
-   sub[c] = '\0';
+   sub[aa] = '\0';
 }
 
 char *encrypt(char* str, bool cek){
@@ -44,46 +73,47 @@ char *encrypt(char* str, bool cek){
 }
 
 char *bagianAkhir(char *str){
-	if(!strcmp(str, "/")) return NULL;
+	if(!strcmp(str, "/")) {
+		return NULL;
+	}
 	return strrchr(str, '/') + 1;
 }
 
 char *jalanCek(char *str){
 	bool encr;
 	int start, id;
-	encr = 0; start = 1; 
+	encr = false; 
+	start = 1; 
 	id = strchr(str + start, '/') - str - 1;
 	char curpos[1024];
-	while(id < strlen(str))
-	{
+	while(id < strlen(str)){
 		strcpy(curpos, "");
 		strncpy(curpos, str + start, id - start + 1);
 		curpos[id - start + 1] = '\0';
-		if(encr)
-		{
+		if(encr){
 			encrypt(curpos, 0);
 			strncpy(str + start, curpos, id - start + 1);
 		}
-		if(!encr && strstr(str + start, "AtoZ_") == str + start) encr = 1;
+		if(!encr && strstr(str + start, "AtoZ_") == str + start) encr = true;
 		start = id + 2;
 		id = strchr(str + start, '/') - str - 1;
 	}
 	id = strlen(str); id--;
 	strncpy(curpos, str + start, id - start + 1);
 	curpos[id - start + 1] = '\0';
-	if(encr)
-	{
+	if(encr){
 		encrypt(curpos, 1);
 		strncpy(str + start, curpos, id - start + 1);
 	}
 	return str;
 }
 
-char *mixPath(char *fin, char *str1, const char *str2){
+char *campurPath(char *fin, char *str1, const char *str2){
 	strcpy(fin, str1);
-	if(!strcmp(str2, "/")) return fin;
-	if(str2[0] != '/')
-	{
+	if(!strcmp(str2, "/")) {
+		return fin;
+	}
+	if(str2[0] != '/'){
 		fin[strlen(fin) + 1] = '\0';
 		fin[strlen(fin)] = '/';
 	}
@@ -92,17 +122,17 @@ char *mixPath(char *fin, char *str1, const char *str2){
 }
 
 int cekAtoz(char *str){
-	int ans;
-	char *fi = strtok(str, "/");
-	ans = 0;
-	while(fi)
-	{
-		char sub[1024];
-		substr(fi, sub, 0, 5);
-		if(!strcmp(sub, "AtoZ_")) ans = 1;
-		fi = strtok(NULL, "/");
+	int what = 0;
+	char *haha = strtok(str, "/");
+	while(haha){
+		char mini[1024];
+		substr(haha, mini, 0, 5);
+		if(!strcmp(mini, "AtoZ_")) {
+			what = 1;
+		}
+		haha = strtok(NULL, "/");
 	}
-	return ans;
+	return what;
 }
 
 void loopEncry(char *str, int flag){
@@ -116,10 +146,10 @@ void loopEncry(char *str, int flag){
 		if(strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
         {
         	char path[2000000], name[1000000], newname[1000000];
-        	mixPath(path, str, dp->d_name);
+        	campurPath(path, str, dp->d_name);
 			strcpy(name, dp->d_name);
-			if(flag == 1) mixPath(newname, str, encrypt(name, 1));
-			else if(flag == -1) mixPath(newname, str, encrypt(name, 1));
+			if(flag == 1) campurPath(newname, str, encrypt(name, 1));
+			else if(flag == -1) campurPath(newname, str, encrypt(name, 1));
 			if(dp->d_type == DT_REG) rename(path, newname);
 			else if(dp->d_type == DT_DIR)
 			{
@@ -141,7 +171,7 @@ void fullencr(char *str, int flag){
 static int xmp_getattr(const char *path, struct stat *stbuf){
 	int res;
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	res = lstat(jalanCek(fpath), stbuf);
 	if (res == -1) return -errno;
 	return 0;
@@ -150,7 +180,7 @@ static int xmp_getattr(const char *path, struct stat *stbuf){
 static int xmp_access(const char *path, int mask){
 	int res;
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	res = access(jalanCek(fpath), mask);
 	if (res == -1) return -errno;
 	return 0;
@@ -159,7 +189,7 @@ static int xmp_access(const char *path, int mask){
 static int xmp_readlink(const char *path, char *buf, size_t size){
 	int res;
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	res = readlink(jalanCek(fpath), buf, size - 1);
 	if (res == -1) return -errno;
 	buf[res] = '\0';
@@ -170,7 +200,7 @@ static int xmp_readlink(const char *path, char *buf, size_t size){
 static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		       off_t offset, struct fuse_file_info *fi){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int res = 0;
 	
 	DIR *dp;
@@ -207,7 +237,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 static int xmp_mknod(const char *path, mode_t mode, dev_t rdev){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	jalanCek(fpath);
 	int res;
 	
@@ -224,7 +254,7 @@ static int xmp_mknod(const char *path, mode_t mode, dev_t rdev){
 
 static int xmp_mkdir(const char *path, mode_t mode){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	
 	int res;
 
@@ -249,7 +279,7 @@ static int xmp_mkdir(const char *path, mode_t mode){
 
 static int xmp_unlink(const char *path){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int res;
 
 	res = unlink(jalanCek(fpath));
@@ -259,7 +289,7 @@ static int xmp_unlink(const char *path){
 
 static int xmp_rmdir(const char *path){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int res;
 
 	res = rmdir(jalanCek(fpath));
@@ -279,10 +309,10 @@ static int xmp_symlink(const char *from, const char *to){
 
 static int xmp_rename(const char *from, const char *to){    
     char ffrom[1000];
-	mixPath(ffrom, dirpath, from);
+	campurPath(ffrom, dirpath, from);
 	
     char final[1000];
-	mixPath(final, dirpath, to);
+	campurPath(final, dirpath, to);
 	
 	int res;
 
@@ -334,7 +364,7 @@ static int xmp_link(const char *from, const char *to){
 
 static int xmp_chmod(const char *path, mode_t mode){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int res;
 
 	res = chmod(jalanCek(fpath), mode);
@@ -344,7 +374,7 @@ static int xmp_chmod(const char *path, mode_t mode){
 
 static int xmp_chown(const char *path, uid_t uid, gid_t gid){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int res;
 
 	res = lchown(jalanCek(fpath), uid, gid);
@@ -354,7 +384,7 @@ static int xmp_chown(const char *path, uid_t uid, gid_t gid){
 
 static int xmp_truncate(const char *path, off_t size){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int res;
 
 	res = truncate(jalanCek(fpath), size);
@@ -362,25 +392,9 @@ static int xmp_truncate(const char *path, off_t size){
 	return 0;
 }
 
-static int xmp_utimens(const char *path, const struct timespec ts[2]){
-	char fpath[1000];
-	mixPath(fpath, dirpath, path);
-	int res;
-	struct timeval tv[2];
-
-	tv[0].tv_sec = ts[0].tv_sec;
-	tv[0].tv_usec = ts[0].tv_nsec / 1000;
-	tv[1].tv_sec = ts[1].tv_sec;
-	tv[1].tv_usec = ts[1].tv_nsec / 1000;
-
-	res = utimes(jalanCek(fpath), tv);
-	if (res == -1) return -errno;
-	return 0;
-}
-
 static int xmp_open(const char *path, struct fuse_file_info *fi){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int res;
 
 	res = open(jalanCek(fpath), fi->flags);
@@ -390,10 +404,9 @@ static int xmp_open(const char *path, struct fuse_file_info *fi){
 }
 
 static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
-		    struct fuse_file_info *fi)
-
+		    struct fuse_file_info *fi){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int fd = 0;
 	int res = 0;
 
@@ -409,10 +422,9 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 }
 
 static int xmp_write(const char *path, const char *buf, size_t size,
-		     off_t offset, struct fuse_file_info *fi)
-{
+		     off_t offset, struct fuse_file_info *fi){
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int fd;
 	int res;
 
@@ -430,7 +442,7 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 static int xmp_statfs(const char *path, struct statvfs *stbuf)
 {
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
 	int res;
 
 	res = statvfs(jalanCek(fpath), stbuf);
@@ -438,10 +450,9 @@ static int xmp_statfs(const char *path, struct statvfs *stbuf)
 	return 0;
 }
 
-static int xmp_create(const char* path, mode_t mode, struct fuse_file_info* fi) 
-{
+static int xmp_create(const char* path, mode_t mode, struct fuse_file_info* fi) {
 	char fpath[1000];
-	mixPath(fpath, dirpath, path);
+	campurPath(fpath, dirpath, path);
     (void) fi;
 
     int res;
@@ -453,8 +464,7 @@ static int xmp_create(const char* path, mode_t mode, struct fuse_file_info* fi)
 }
 
 
-static int xmp_release(const char *path, struct fuse_file_info *fi)
-{
+static int xmp_release(const char *path, struct fuse_file_info *fi){
 	(void) path;
 	(void) fi;
 	return 0;
@@ -485,7 +495,6 @@ static struct fuse_operations xmp_oper = {
 	.chmod		= xmp_chmod,
 	.chown		= xmp_chown,
 	.truncate	= xmp_truncate,
-	.utimens	= xmp_utimens,
 	.open		= xmp_open,
 	.read		= xmp_read,
 	.write		= xmp_write,
