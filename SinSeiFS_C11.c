@@ -478,8 +478,7 @@ static int xmp_release(const char *path, struct fuse_file_info *fi){
 }
 
 static int xmp_fsync(const char *path, int isdatasync,
-		     struct fuse_file_info *fi)
-{
+		     struct fuse_file_info *fi){
 	(void) path;
 	(void) isdatasync;
 	(void) fi;
@@ -511,8 +510,7 @@ static struct fuse_operations xmp_oper = {
 	.fsync		= xmp_fsync,
 };
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
 	umask(0);
 	return fuse_main(argc, argv, &xmp_oper, NULL);
 }
