@@ -139,22 +139,27 @@ void loopEncry(char *str, int flag){
 	struct dirent *dp;
 	DIR *dir = opendir(str);
 	
-	if(!dir) return;
+	if(!dir){
+		return;
+	}
 	
-	while((dp = readdir(dir)) != NULL)
-	{
-		if(strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
-        {
-        	char path[2000000], name[1000000], newname[1000000];
+	while((dp = readdir(dir)) != NULL){
+		if(strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0){
+        	char path[2000000], nama[1000000], namabaru[1000000];
         	campurPath(path, str, dp->d_name);
-			strcpy(name, dp->d_name);
-			if(flag == 1) campurPath(newname, str, encrypt(name, 1));
-			else if(flag == -1) campurPath(newname, str, encrypt(name, 1));
-			if(dp->d_type == DT_REG) rename(path, newname);
-			else if(dp->d_type == DT_DIR)
-			{
-				rename(path, newname);
-				loopEncry(newname, flag);
+			strcpy(nama, dp->d_name);
+			if(flag == 1) {
+				campurPath(namabaru, str, encrypt(nama, 1));
+			}
+			else if(flag == -1) {
+				campurPath(namabaru, str, encrypt(nama, 1));
+			}
+			if(dp->d_type == DT_REG){
+				rename(path, namabaru);
+			}
+			else if(dp->d_type == DT_DIR){
+				rename(path, namabaru);
+				loopEncry(namabaru, flag);
 			}
         }
 	}
@@ -169,30 +174,30 @@ void fullencr(char *str, int flag){
 }
 
 static int xmp_getattr(const char *path, struct stat *stbuf){
-	int res;
+	int jadi;
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	res = lstat(jalanCek(fpath), stbuf);
-	if (res == -1) return -errno;
+	jadi = lstat(jalanCek(fpath), stbuf);
+	if (jadi == -1) return -errno;
 	return 0;
 }
 
 static int xmp_access(const char *path, int mask){
-	int res;
+	int jadi;
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	res = access(jalanCek(fpath), mask);
-	if (res == -1) return -errno;
+	jadi = access(jalanCek(fpath), mask);
+	if (jadi == -1) return -errno;
 	return 0;
 }
 
 static int xmp_readlink(const char *path, char *buf, size_t size){
-	int res;
+	int jadi;
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	res = readlink(jalanCek(fpath), buf, size - 1);
-	if (res == -1) return -errno;
-	buf[res] = '\0';
+	jadi = readlink(jalanCek(fpath), buf, size - 1);
+	if (jadi == -1) return -errno;
+	buf[jadi] = '\0';
 	return 0;
 }
 
@@ -201,7 +206,7 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		       off_t offset, struct fuse_file_info *fi){
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	int res = 0;
+	int jadi = 0;
 	
 	DIR *dp;
 	struct dirent *de;
@@ -218,17 +223,15 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		st.st_mode = de->d_type << 12;
 		char nama[1000000];
 		strcpy(nama, de->d_name);
-		if(flag == 1)
-		{
+		if(flag == 1){
 			if(de->d_type == DT_REG) encrypt(nama, 1);
 			else if(de->d_type == DT_DIR && strcmp(de->d_name, ".") != 0 && strcmp(de->d_name, "..") != 0) encrypt(nama, 0);
-			res = (filler(buf, nama, &st, 0));
-			if(res!=0) break;
+			jadi = (filler(buf, nama, &st, 0));
+			if(jadi!=0) break;
 		}
-		else
-		{
-			res = (filler(buf, nama, &st, 0));
-			if(res!=0) break;
+		else{
+			jadi = (filler(buf, nama, &st, 0));
+			if(jadi!=0) break;
 		}
 	}
 	closedir(dp);
@@ -239,15 +242,19 @@ static int xmp_mknod(const char *path, mode_t mode, dev_t rdev){
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
 	jalanCek(fpath);
-	int res;
+	int jadi;
 	
 	if (S_ISREG(mode)) {
-		res = open(fpath, O_CREAT | O_EXCL | O_WRONLY, mode);
-		if (res >= 0) res = close(res);
+		jadi = open(fpath, O_CREAT | O_EXCL | O_WRONLY, mode);
+		if (jadi >= 0) jadi = close(jadi);
 	} 
-	else if (S_ISFIFO(mode)) res = mkfifo(fpath, mode);
-	else res = mknod(fpath, mode, rdev);
-	if (res == -1) return -errno;
+	else if (S_ISFIFO(mode)){
+		 jadi = mkfifo(fpath, mode);
+		}
+	else {
+		jadi = mknod(fpath, mode, rdev);
+	}
+	if (jadi == -1) return -errno;
 	
 	return 0;
 }
@@ -256,10 +263,10 @@ static int xmp_mkdir(const char *path, mode_t mode){
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
 	
-	int res;
+	int jadi;
 
-	res = mkdir(jalanCek(fpath), mode);
-	if (res == -1) return -errno;
+	jadi = mkdir(jalanCek(fpath), mode);
+	if (jadi == -1) return -errno;
 	
     char checking[1024];
     if(bagianAkhir(fpath) == 0) return 0;
@@ -280,28 +287,28 @@ static int xmp_mkdir(const char *path, mode_t mode){
 static int xmp_unlink(const char *path){
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	int res;
+	int jadi;
 
-	res = unlink(jalanCek(fpath));
-	if (res == -1) return -errno;
+	jadi = unlink(jalanCek(fpath));
+	if (jadi == -1) return -errno;
 	return 0;
 }
 
 static int xmp_rmdir(const char *path){
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	int res;
+	int jadi;
 
-	res = rmdir(jalanCek(fpath));
-	if (res == -1) return -errno;
+	jadi = rmdir(jalanCek(fpath));
+	if (jadi == -1) return -errno;
 	return 0;
 }
 
 static int xmp_symlink(const char *from, const char *to){
-	int res;
+	int jadi;
 
-	res = symlink(from, to);
-	if (res == -1)
+	jadi = symlink(from, to);
+	if (jadi == -1)
 		return -errno;
 
 	return 0;
@@ -314,11 +321,11 @@ static int xmp_rename(const char *from, const char *to){
     char final[1000];
 	campurPath(final, dirpath, to);
 	
-	int res;
+	int jadi;
 
-	res = rename(jalanCek(ffrom), jalanCek(final));
+	jadi = rename(jalanCek(ffrom), jalanCek(final));
 	
-	if (res == -1)
+	if (jadi == -1)
 		return -errno;
 	
 	int fromm = 0, too = 0;
@@ -353,10 +360,10 @@ static int xmp_rename(const char *from, const char *to){
 }
 
 static int xmp_link(const char *from, const char *to){
-	int res;
+	int jadi;
 
-	res = link(from, to);
-	if (res == -1)
+	jadi = link(from, to);
+	if (jadi == -1)
 		return -errno;
 
 	return 0;
@@ -365,41 +372,41 @@ static int xmp_link(const char *from, const char *to){
 static int xmp_chmod(const char *path, mode_t mode){
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	int res;
+	int jadi;
 
-	res = chmod(jalanCek(fpath), mode);
-	if (res == -1) return -errno;
+	jadi = chmod(jalanCek(fpath), mode);
+	if (jadi == -1) return -errno;
 	return 0;
 }
 
 static int xmp_chown(const char *path, uid_t uid, gid_t gid){
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	int res;
+	int jadi;
 
-	res = lchown(jalanCek(fpath), uid, gid);
-	if (res == -1) return -errno;
+	jadi = lchown(jalanCek(fpath), uid, gid);
+	if (jadi == -1) return -errno;
 	return 0;
 }
 
 static int xmp_truncate(const char *path, off_t size){
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	int res;
+	int jadi;
 
-	res = truncate(jalanCek(fpath), size);
-	if (res == -1) return -errno;
+	jadi = truncate(jalanCek(fpath), size);
+	if (jadi == -1) return -errno;
 	return 0;
 }
 
 static int xmp_open(const char *path, struct fuse_file_info *fi){
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	int res;
+	int jadi;
 
-	res = open(jalanCek(fpath), fi->flags);
-	if (res == -1) return -errno;
-	close(res);
+	jadi = open(jalanCek(fpath), fi->flags);
+	if (jadi == -1) return -errno;
+	close(jadi);
 	return 0;
 }
 
@@ -408,17 +415,17 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
 	int fd = 0;
-	int res = 0;
+	int jadi = 0;
 
 	(void) fi;
 	fd = open(jalanCek(fpath), O_RDONLY);
 	if (fd == -1) return -errno;
 
-	res = pread(fd, buf, size, offset);
-	if (res == -1) res = -errno;
+	jadi = pread(fd, buf, size, offset);
+	if (jadi == -1) jadi = -errno;
 	close(fd);
 	
-	return res;
+	return jadi;
 }
 
 static int xmp_write(const char *path, const char *buf, size_t size,
@@ -426,27 +433,27 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
 	int fd;
-	int res;
+	int jadi;
 
 	(void) fi;
 	fd = open(jalanCek(fpath), O_WRONLY);
 	if (fd == -1) return -errno;
 
-	res = pwrite(fd, buf, size, offset);
-	if (res == -1) res = -errno;
+	jadi = pwrite(fd, buf, size, offset);
+	if (jadi == -1) jadi = -errno;
 
 	close(fd);
-	return res;
+	return jadi;
 }
 
 static int xmp_statfs(const char *path, struct statvfs *stbuf)
 {
 	char fpath[1000];
 	campurPath(fpath, dirpath, path);
-	int res;
+	int jadi;
 
-	res = statvfs(jalanCek(fpath), stbuf);
-	if (res == -1) return -errno;
+	jadi = statvfs(jalanCek(fpath), stbuf);
+	if (jadi == -1) return -errno;
 	return 0;
 }
 
@@ -455,11 +462,11 @@ static int xmp_create(const char* path, mode_t mode, struct fuse_file_info* fi) 
 	campurPath(fpath, dirpath, path);
     (void) fi;
 
-    int res;
-    res = creat(jalanCek(fpath), mode);
-    if(res == -1) return -errno;
+    int jadi;
+    jadi = creat(jalanCek(fpath), mode);
+    if(jadi == -1) return -errno;
 	
-    close(res);
+    close(jadi);
     return 0;
 }
 
