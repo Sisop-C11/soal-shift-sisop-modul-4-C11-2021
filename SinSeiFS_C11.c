@@ -17,7 +17,7 @@ char dirpath[50] = "/home/solxius/Downloads";
 char ext[100000] = "\0";
 int id = 0;
 
-void substring(char *s, char *sub, int p, int l) {
+void substr(char *s, char *sub, int p, int l) {
    int c = 0;
    while (c < l) 
    {
@@ -27,10 +27,7 @@ void substring(char *s, char *sub, int p, int l) {
    sub[c] = '\0';
 }
 
-int ges = 10;
-
-char *encrypt(char* str, bool cek)
-{
+char *encrypt(char* str, bool cek){
 	int i, k = 0;
 	char *ext = strrchr(str, '.');
 	if(cek && ext != NULL) k = strlen(ext);
@@ -46,30 +43,12 @@ char *encrypt(char* str, bool cek)
 	return str;
 }
 
-char *decrypt(char* str, bool cek)
-{
-	int i, k = 0;
-	char *ext = strrchr(str, '.');
-	if(cek && ext != NULL) k = strlen(ext);
-	
-	for(i = 0; i < strlen(str) - k; i++){
-	 if(!((str[i]>=0&&str[i]<65)||(str[i]>90&&str[i]<97)||(str[i]>122&&str[i]<=127))){
-	   if(str[i]>='A'&&str[i]<='Z')
-	   str[i]= 'Z'+'A'-str[i];
-	   if(str[i]>='a'&&str[i]<='z')
-	   str[i]= 'z'+'a'-str[i];
-	 } 
-  }
-	return str;
-}
-
-char *lastPart(char *str)
-{
+char *bagianAkhir(char *str){
 	if(!strcmp(str, "/")) return NULL;
 	return strrchr(str, '/') + 1;
 }
 
-char *cekPath(char *str){
+char *jalanCek(char *str){
 	bool encr;
 	int start, id;
 	encr = 0; start = 1; 
@@ -100,8 +79,7 @@ char *cekPath(char *str){
 	return str;
 }
 
-char *mixPath(char *fin, char *str1, const char *str2)
-{
+char *mixPath(char *fin, char *str1, const char *str2){
 	strcpy(fin, str1);
 	if(!strcmp(str2, "/")) return fin;
 	if(str2[0] != '/')
@@ -113,23 +91,21 @@ char *mixPath(char *fin, char *str1, const char *str2)
 	return fin;
 }
 
-int encrFolder(char *str)
-{
+int cekAtoz(char *str){
 	int ans;
 	char *fi = strtok(str, "/");
 	ans = 0;
 	while(fi)
 	{
 		char sub[1024];
-		substring(fi, sub, 0, 5);
+		substr(fi, sub, 0, 5);
 		if(!strcmp(sub, "AtoZ_")) ans = 1;
 		fi = strtok(NULL, "/");
 	}
 	return ans;
 }
 
-void loopAllEnc1(char *str, int flag)
-{
+void loopEncry(char *str, int flag){
 	struct dirent *dp;
 	DIR *dir = opendir(str);
 	
@@ -143,52 +119,48 @@ void loopAllEnc1(char *str, int flag)
         	mixPath(path, str, dp->d_name);
 			strcpy(name, dp->d_name);
 			if(flag == 1) mixPath(newname, str, encrypt(name, 1));
-			else if(flag == -1) mixPath(newname, str, decrypt(name, 1));
+			else if(flag == -1) mixPath(newname, str, encrypt(name, 1));
 			if(dp->d_type == DT_REG) rename(path, newname);
 			else if(dp->d_type == DT_DIR)
 			{
 				rename(path, newname);
-				loopAllEnc1(newname, flag);
+				loopEncry(newname, flag);
 			}
         }
 	}
 }
 
-void encrypt1(char *str, int flag)
-{
+void fullencr(char *str, int flag){
 	struct stat add;
 	stat(str, &add);
 	if(!S_ISDIR(add.st_mode)) return;
 	printf("%s\n", str);
-	loopAllEnc1(str, flag);
+	loopEncry(str, flag);
 }
 
-static int xmp_getattr(const char *path, struct stat *stbuf)
-{
+static int xmp_getattr(const char *path, struct stat *stbuf){
 	int res;
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
-	res = lstat(cekPath(fpath), stbuf);
+	res = lstat(jalanCek(fpath), stbuf);
 	if (res == -1) return -errno;
 	return 0;
 }
 
-static int xmp_access(const char *path, int mask)
-{
+static int xmp_access(const char *path, int mask){
 	int res;
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
-	res = access(cekPath(fpath), mask);
+	res = access(jalanCek(fpath), mask);
 	if (res == -1) return -errno;
 	return 0;
 }
 
-static int xmp_readlink(const char *path, char *buf, size_t size)
-{
+static int xmp_readlink(const char *path, char *buf, size_t size){
 	int res;
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
-	res = readlink(cekPath(fpath), buf, size - 1);
+	res = readlink(jalanCek(fpath), buf, size - 1);
 	if (res == -1) return -errno;
 	buf[res] = '\0';
 	return 0;
@@ -205,10 +177,10 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	struct dirent *de;
 	(void) offset;
 	(void) fi;
-	dp = opendir(cekPath(fpath));
+	dp = opendir(jalanCek(fpath));
 	if (dp == NULL) return -errno;
 	
-	int flag = encrFolder(fpath);
+	int flag = cekAtoz(fpath);
 	while ((de = readdir(dp)) != NULL) {
 		struct stat st;
 		memset(&st, 0, sizeof(st));
@@ -218,8 +190,8 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		strcpy(nama, de->d_name);
 		if(flag == 1)
 		{
-			if(de->d_type == DT_REG) decrypt(nama, 1);
-			else if(de->d_type == DT_DIR && strcmp(de->d_name, ".") != 0 && strcmp(de->d_name, "..") != 0) decrypt(nama, 0);
+			if(de->d_type == DT_REG) encrypt(nama, 1);
+			else if(de->d_type == DT_DIR && strcmp(de->d_name, ".") != 0 && strcmp(de->d_name, "..") != 0) encrypt(nama, 0);
 			res = (filler(buf, nama, &st, 0));
 			if(res!=0) break;
 		}
@@ -233,11 +205,10 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	return 0;
 }
 
-static int xmp_mknod(const char *path, mode_t mode, dev_t rdev)
-{
+static int xmp_mknod(const char *path, mode_t mode, dev_t rdev){
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
-	cekPath(fpath);
+	jalanCek(fpath);
 	int res;
 	
 	if (S_ISREG(mode)) {
@@ -251,56 +222,52 @@ static int xmp_mknod(const char *path, mode_t mode, dev_t rdev)
 	return 0;
 }
 
-static int xmp_mkdir(const char *path, mode_t mode)
-{
+static int xmp_mkdir(const char *path, mode_t mode){
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
 	
 	int res;
 
-	res = mkdir(cekPath(fpath), mode);
+	res = mkdir(jalanCek(fpath), mode);
 	if (res == -1) return -errno;
 	
-    char cek_substr[1024];
-    if(lastPart(fpath) == 0) return 0;
-    char filePath[1000000];
-    strcpy(filePath, lastPart(fpath));
-    substring(filePath, cek_substr, 0, 5);
-	if(strcmp(cek_substr, "AtoZ_") == 0) //folder encrypt1
+    char checking[1024];
+    if(bagianAkhir(fpath) == 0) return 0;
+    char absPath[1000000];
+    strcpy(absPath, bagianAkhir(fpath));
+    substr(absPath, checking, 0, 5);
+	if(strcmp(checking, "AtoZ_") == 0) //folder fullencr
 	{
 		FILE *filez1;
 		filez1 = fopen("sebuah.log", "a+");
-		fprintf(filez1, "Tambah : %s → %s\n", filePath, filePath);
+		fprintf(filez1, "Tambah : %s → %s\n", absPath, absPath);
 		fclose(filez1);
-		encrypt1(fpath, 1);	
+		fullencr(fpath, 1);	
 	}
 	return 0;
 }
 
-static int xmp_unlink(const char *path)
-{
+static int xmp_unlink(const char *path){
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
 	int res;
 
-	res = unlink(cekPath(fpath));
+	res = unlink(jalanCek(fpath));
 	if (res == -1) return -errno;
 	return 0;
 }
 
-static int xmp_rmdir(const char *path)
-{
+static int xmp_rmdir(const char *path){
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
 	int res;
 
-	res = rmdir(cekPath(fpath));
+	res = rmdir(jalanCek(fpath));
 	if (res == -1) return -errno;
 	return 0;
 }
 
-static int xmp_symlink(const char *from, const char *to)
-{
+static int xmp_symlink(const char *from, const char *to){
 	int res;
 
 	res = symlink(from, to);
@@ -310,37 +277,34 @@ static int xmp_symlink(const char *from, const char *to)
 	return 0;
 }
 
-static int xmp_rename(const char *from, const char *to)
-{    
+static int xmp_rename(const char *from, const char *to){    
     char ffrom[1000];
 	mixPath(ffrom, dirpath, from);
 	
-    char fto[1000];
-	mixPath(fto, dirpath, to);
+    char final[1000];
+	mixPath(final, dirpath, to);
 	
 	int res;
 
-	res = rename(cekPath(ffrom), cekPath(fto));
+	res = rename(jalanCek(ffrom), jalanCek(final));
 	
 	if (res == -1)
 		return -errno;
 	
 	int fromm = 0, too = 0;
-	char cek_substr[1024], cek2[1024];
-    if(lastPart(ffrom) == 0) return 0;
-    char filePath[1000000];
-    strcpy(filePath, lastPart(ffrom));
-    substring(filePath, cek_substr, 0, 5);
-	if(strcmp(cek_substr, "AtoZ_") == 0) //folder encrypt1
-	{
+	char checking[1024], cek2[1024];
+    if(bagianAkhir(ffrom) == 0) return 0;
+    char absPath[1000000];
+    strcpy(absPath, bagianAkhir(ffrom));
+    substr(absPath, checking, 0, 5);
+	if(strcmp(checking, "AtoZ_") == 0){
 		fromm = 1;
 	}
 	
-    if(lastPart(fto) == 0) return 0;
-    strcpy(filePath, lastPart(fto));
-    substring(filePath, cek_substr, 0, 5);
-	if(strcmp(cek2, "AtoZ_") == 0) //folder decrypt1
-	{
+    if(bagianAkhir(final) == 0) return 0;
+    strcpy(absPath, bagianAkhir(final));
+    substr(absPath, checking, 0, 5);
+	if(strcmp(cek2, "AtoZ_") == 0){
 		too = 1;
 	}
 	
@@ -358,8 +322,7 @@ static int xmp_rename(const char *from, const char *to)
 	return 0;
 }
 
-static int xmp_link(const char *from, const char *to)
-{
+static int xmp_link(const char *from, const char *to){
 	int res;
 
 	res = link(from, to);
@@ -369,41 +332,37 @@ static int xmp_link(const char *from, const char *to)
 	return 0;
 }
 
-static int xmp_chmod(const char *path, mode_t mode)
-{
+static int xmp_chmod(const char *path, mode_t mode){
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
 	int res;
 
-	res = chmod(cekPath(fpath), mode);
+	res = chmod(jalanCek(fpath), mode);
 	if (res == -1) return -errno;
 	return 0;
 }
 
-static int xmp_chown(const char *path, uid_t uid, gid_t gid)
-{
+static int xmp_chown(const char *path, uid_t uid, gid_t gid){
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
 	int res;
 
-	res = lchown(cekPath(fpath), uid, gid);
+	res = lchown(jalanCek(fpath), uid, gid);
 	if (res == -1) return -errno;
 	return 0;
 }
 
-static int xmp_truncate(const char *path, off_t size)
-{
+static int xmp_truncate(const char *path, off_t size){
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
 	int res;
 
-	res = truncate(cekPath(fpath), size);
+	res = truncate(jalanCek(fpath), size);
 	if (res == -1) return -errno;
 	return 0;
 }
 
-static int xmp_utimens(const char *path, const struct timespec ts[2])
-{
+static int xmp_utimens(const char *path, const struct timespec ts[2]){
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
 	int res;
@@ -414,18 +373,17 @@ static int xmp_utimens(const char *path, const struct timespec ts[2])
 	tv[1].tv_sec = ts[1].tv_sec;
 	tv[1].tv_usec = ts[1].tv_nsec / 1000;
 
-	res = utimes(cekPath(fpath), tv);
+	res = utimes(jalanCek(fpath), tv);
 	if (res == -1) return -errno;
 	return 0;
 }
 
-static int xmp_open(const char *path, struct fuse_file_info *fi)
-{
+static int xmp_open(const char *path, struct fuse_file_info *fi){
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
 	int res;
 
-	res = open(cekPath(fpath), fi->flags);
+	res = open(jalanCek(fpath), fi->flags);
 	if (res == -1) return -errno;
 	close(res);
 	return 0;
@@ -433,14 +391,14 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 
 static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 		    struct fuse_file_info *fi)
-{
+
 	char fpath[1000];
 	mixPath(fpath, dirpath, path);
 	int fd = 0;
 	int res = 0;
 
 	(void) fi;
-	fd = open(cekPath(fpath), O_RDONLY);
+	fd = open(jalanCek(fpath), O_RDONLY);
 	if (fd == -1) return -errno;
 
 	res = pread(fd, buf, size, offset);
@@ -459,7 +417,7 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 	int res;
 
 	(void) fi;
-	fd = open(cekPath(fpath), O_WRONLY);
+	fd = open(jalanCek(fpath), O_WRONLY);
 	if (fd == -1) return -errno;
 
 	res = pwrite(fd, buf, size, offset);
@@ -475,7 +433,7 @@ static int xmp_statfs(const char *path, struct statvfs *stbuf)
 	mixPath(fpath, dirpath, path);
 	int res;
 
-	res = statvfs(cekPath(fpath), stbuf);
+	res = statvfs(jalanCek(fpath), stbuf);
 	if (res == -1) return -errno;
 	return 0;
 }
@@ -487,7 +445,7 @@ static int xmp_create(const char* path, mode_t mode, struct fuse_file_info* fi)
     (void) fi;
 
     int res;
-    res = creat(cekPath(fpath), mode);
+    res = creat(jalanCek(fpath), mode);
     if(res == -1) return -errno;
 	
     close(res);
